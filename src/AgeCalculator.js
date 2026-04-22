@@ -1,4 +1,110 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
+const months = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
+];
+
+function MonthDropdown({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedMonth = months.find((m) => m.value === parseInt(value));
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const goToPrevMonth = () => {
+    const current = parseInt(value) || 1;
+    const newMonth = current === 1 ? 12 : current - 1;
+    onChange(newMonth.toString());
+  };
+
+  const goToNextMonth = () => {
+    const current = parseInt(value) || 1;
+    const newMonth = current === 12 ? 1 : current + 1;
+    onChange(newMonth.toString());
+  };
+
+  return (
+    <div className="custom-dropdown month-input" ref={dropdownRef}>
+      <button className="year-btn" onClick={goToPrevMonth}>-</button>
+      <div className="dropdown-selected" onClick={() => setIsOpen(!isOpen)}>
+        <span>{selectedMonth ? selectedMonth.label : 'Month'}</span>
+        <svg
+          className={`dropdown-arrow ${isOpen ? 'open' : ''}`}
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+        >
+          <path fill="currentColor" d="M6 8L1 3h10z" />
+        </svg>
+      </div>
+      <button className="year-btn" onClick={goToNextMonth}>+</button>
+      {isOpen && (
+        <div className="dropdown-options">
+          {months.map((month) => (
+            <div
+              key={month.value}
+              className={`dropdown-option ${parseInt(value) === month.value ? 'selected' : ''}`}
+              onClick={() => {
+                onChange(month.value.toString());
+                setIsOpen(false);
+              }}
+            >
+              {month.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NumberInput({ value, onChange, placeholder, min, max }) {
+  const decrease = () => {
+    const current = parseInt(value) || min;
+    if (current > min) onChange(String(current - 1));
+  };
+
+  const increase = () => {
+    const current = parseInt(value) || min;
+    if (current < max) onChange(String(current + 1));
+  };
+
+  return (
+    <div className="year-input">
+      <button className="year-btn" onClick={decrease}>-</button>
+      <input
+        type="number"
+        className="date-input year-field"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        min={min}
+        max={max}
+      />
+      <button className="year-btn" onClick={increase}>+</button>
+    </div>
+  );
+}
 
 const zodiacSigns = [
   { name: 'Capricorn', start: [12, 22], end: [1, 19] },
@@ -28,9 +134,9 @@ function getZodiacSign(month, day) {
 }
 
 function AgeCalculator() {
-  const [day, setDay] = useState('');
-  const [month, setMonth] = useState('');
-  const [year, setYear] = useState('');
+  const [day, setDay] = useState('1');
+  const [month, setMonth] = useState('1');
+  const [year, setYear] = useState('2000');
   const [age, setAge] = useState(null);
   const [error, setError] = useState('');
 
@@ -114,30 +220,20 @@ function AgeCalculator() {
       <div className="input-group">
         <label>Enter your birth date:</label>
         <div className="date-inputs">
-          <input
-            type="number"
-            className="date-input"
-            placeholder="Day"
+          <NumberInput
             value={day}
-            onChange={(e) => setDay(e.target.value)}
-            min="1"
-            max="31"
+            onChange={setDay}
+            placeholder="Day"
+            min={1}
+            max={31}
           />
-          <input
-            type="number"
-            className="date-input"
-            placeholder="Month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            min="1"
-            max="12"
-          />
-          <input
-            type="number"
-            className="date-input"
-            placeholder="Year"
+          <MonthDropdown value={month} onChange={setMonth} />
+          <NumberInput
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={setYear}
+            placeholder="Year"
+            min={1900}
+            max={2100}
           />
         </div>
         <button className="calculate-btn" onClick={calculateAge}>
