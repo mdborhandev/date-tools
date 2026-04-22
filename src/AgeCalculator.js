@@ -1,5 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+const setCookie = (name, value, days) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+};
+
+const getCookie = (name) => {
+  const nameEQ = `${name}=`;
+  const cookies = document.cookie.split(';');
+  for (let i = 0; i < cookies.length; i++) {
+    let cookie = cookies[i];
+    while (cookie.charAt(0) === ' ') cookie = cookie.substring(1);
+    if (cookie.indexOf(nameEQ) === 0) return cookie.substring(nameEQ.length);
+  }
+  return null;
+};
+
 const months = [
   { value: 1, label: 'January' },
   { value: 2, label: 'February' },
@@ -134,11 +151,38 @@ function getZodiacSign(month, day) {
 }
 
 function AgeCalculator() {
-  const [day, setDay] = useState('1');
-  const [month, setMonth] = useState('1');
-  const [year, setYear] = useState('2000');
+  const [day, setDay] = useState(() => getCookie('day') || '1');
+  const [month, setMonth] = useState(() => getCookie('month') || '1');
+  const [year, setYear] = useState(() => getCookie('year') || '2000');
   const [age, setAge] = useState(null);
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState(() => getCookie('theme') || 'dark');
+
+  useEffect(() => {
+    document.body.className = theme;
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.body.className = newTheme;
+    setCookie('theme', newTheme, 365);
+  };
+
+  const updateDay = (value) => {
+    setDay(value);
+    setCookie('day', value, 365);
+  };
+
+  const updateMonth = (value) => {
+    setMonth(value);
+    setCookie('month', value, 365);
+  };
+
+  const updateYear = (value) => {
+    setYear(value);
+    setCookie('year', value, 365);
+  };
 
   const calculateAge = () => {
     if (!day || !month || !year) {
@@ -215,22 +259,27 @@ function AgeCalculator() {
   };
 
   return (
-    <div className="container">
-      <h1>Age Calculator</h1>
+    <div className={`container ${theme}`}>
+      <div className="header">
+        <h1>Age Calculator</h1>
+        <button className="theme-toggle" onClick={toggleTheme}>
+          {theme === 'dark' ? 'Light' : 'Dark'}
+        </button>
+      </div>
       <div className="input-group">
         <label>Enter your birth date:</label>
         <div className="date-inputs">
           <NumberInput
             value={day}
-            onChange={setDay}
+            onChange={updateDay}
             placeholder="Day"
             min={1}
             max={31}
           />
-          <MonthDropdown value={month} onChange={setMonth} />
+          <MonthDropdown value={month} onChange={updateMonth} />
           <NumberInput
             value={year}
-            onChange={setYear}
+            onChange={updateYear}
             placeholder="Year"
             min={1900}
             max={2100}
